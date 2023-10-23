@@ -385,7 +385,6 @@ namespace MetroidMod.Common.Players
 				{
 					energyLowPlayedTimes++;
 					energyLowTimer = 39;
-					// energyLowTimer = Common.Configs.MConfigClient.Instance.energyLowInterval;
 					SoundStyle baseSound = EnergyIsCriticallyLow() ? Sounds.Suit.EnergyLowCritical : Sounds.Suit.EnergyLowNormal;
 					float volume = energyLowPlayedTimes > 4 ? 0.5f : 1f;
 					SoundEngine.PlaySound(baseSound with {Volume = volume}, Player.position);
