@@ -39,7 +39,7 @@ namespace MetroidMod.Common.Configs
         /*[Label("[i:MetroidMod/EnergyTankAddon] Low Energy Alert Interval")]
         [Tooltip("The interval between Low Energy beeps.\n[Default: 20]")]*/
         [Slider]
-        [DefaultValue(20)]
+        [DefaultValue(39)]
         [Range(5, 200)]
         [Increment(5)]
         public int energyLowInterval;

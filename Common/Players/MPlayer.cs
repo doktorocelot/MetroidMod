@@ -63,7 +63,10 @@ namespace MetroidMod.Common.Players
 		public Vector2 oldPosition;
 
 		public bool falling;
+		
 		public int energyLowTimer = 0;
+		private int energyLowPlayedTimes = 0;
+		private bool lastEnergyStateWasCritical = false;
 
 		public override void ResetEffects()
 		{
@@ -370,19 +373,46 @@ namespace MetroidMod.Common.Players
 
 			GrappleBeamMovement();
 			
-			if (Energy <= 30 && ShouldShowArmorUI == true)
+			if (EnergyIsLow() && ShouldShowArmorUI == true)
 			{
 				energyLowTimer--;
+				if (!lastEnergyStateWasCritical && EnergyIsCriticallyLow())
+				{
+					ResetEnergyTimer();
+				}
+				lastEnergyStateWasCritical = EnergyIsCriticallyLow();
 				if (energyLowTimer <= 0)
 				{
-					energyLowTimer = Common.Configs.MConfigClient.Instance.energyLowInterval;
-					if (Common.Configs.MConfigClient.Instance.energyLow)
-					{
-						SoundEngine.PlaySound(Sounds.Suit.EnergyLow, Player.position);
-					}
+					energyLowPlayedTimes++;
+					energyLowTimer = 39;
+					// energyLowTimer = Common.Configs.MConfigClient.Instance.energyLowInterval;
+					SoundStyle baseSound = EnergyIsCriticallyLow() ? Sounds.Suit.EnergyLowCritical : Sounds.Suit.EnergyLowNormal;
+					float volume = energyLowPlayedTimes > 4 ? 0.5f : 1f;
+					SoundEngine.PlaySound(baseSound with {Volume = volume}, Player.position);
 				}
 			}
+			else
+			{
+				ResetEnergyTimer();
+			}
 		}
+
+		private void ResetEnergyTimer()
+		{
+			energyLowTimer = 0;
+			energyLowPlayedTimes = 0;
+		}
+
+		public bool EnergyIsLow()
+		{
+			return Energy <= 50 && Common.Configs.MConfigClient.Instance.energyLow;
+		}
+
+		public bool EnergyIsCriticallyLow()
+		{
+			return Energy <= 20 && Common.Configs.MConfigClient.Instance.energyLow;
+		}
+
 		public override void PostUpdateRunSpeeds()
 		{
 			PostUpdateRunSpeeds_Accessories();

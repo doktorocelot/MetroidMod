@@ -815,17 +815,71 @@ namespace MetroidMod.Common.Systems
 			MPlayer mp = P.GetModPlayer<MPlayer>();
 			if (mp.ShouldShowArmorUI)
 			{
-				// number
-				int num0 = (int)Math.Floor(mp.Energy / 10f);
-				int num1 = num0 - (int)Math.Floor(num0 / 10f) * 10;
-				int num2 = mp.Energy - (num0 * 10);
-				Texture2D tex1 = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/EnergyTextures/{num1}").Value;
-				Texture2D tex2 = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/EnergyTextures/{num2}").Value;
-				Vector2 center = new(Main.screenWidth / 2, tex1.Height);
-				center += new Vector2(0, 20);
-				sb.Draw(tex1, center + new Vector2(-100 - tex1.Width * 2 - 16, - tex1.Height / 2), new Rectangle?(new Rectangle(0, 0, tex1.Width, tex1.Height)), mp.HUDColor, 0f, new Vector2((float)(tex1.Width / 2), (float)(tex1.Height / 2)), 2f, SpriteEffects.None, 0f);
-				sb.Draw(tex2, center + new Vector2(-100 - tex1.Width - 4, - tex1.Height / 2), new Rectangle?(new Rectangle(0, 0, tex2.Width, tex2.Height)), mp.HUDColor, 0f, new Vector2((float)(tex2.Width / 2), (float)(tex2.Height / 2)), 2f, SpriteEffects.None, 0f);
+				const int verticalPadding = 20;
+				const int borderPadding = 1;
+				Color? dangerColor = null;
+				// low hp flash
+				if (mp.EnergyIsLow())
+				{
+					int target = mp.EnergyIsCriticallyLow() ? 20 : 39;
+					int interval = target / 2;
+					int timer = mp.energyLowTimer % target;
+					float ratio = timer < interval ? timer / (float) interval : 1 - (timer - interval) / (float) interval;
+					dangerColor = BlendColors(Color.Red, Color.Black, ratio);
+				}
 
+				Color glowColor = Color.Transparent;
+				Color bgColor = Color.White;
+				if (dangerColor != null)
+				{
+					glowColor = dangerColor.Value;
+					if (mp.EnergyIsCriticallyLow())
+					{
+						bgColor = dangerColor.Value;
+					}
+				}
+
+				// background
+				Texture2D bgTex = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/SuitHudBg").Value;
+				Vector2 center = new(Main.screenWidth / 2, bgTex.Height / 2 + verticalPadding);
+				sb.Draw(bgTex, center - bgTex.Size() / 2, bgColor);
+				center += new Vector2(0, borderPadding);
+				
+				// value
+				int energyBase = (int)Math.Floor(mp.Energy / 10f);
+				int energyTens = energyBase - (int)Math.Floor(energyBase / 10f) * 10;
+				int energyOnes = mp.Energy - (energyBase * 10);
+				Texture2D tex1 = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/Num{energyTens}").Value;
+				Texture2D tex2 = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/Num{energyOnes}").Value;
+				Texture2D tex1Glow = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/GlowNum{energyTens}").Value;
+				Texture2D tex2Glow = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/GlowNum{energyOnes}").Value;
+
+				Vector2 numberOffset = new(-87, 0);
+				Vector2 numberAdvance = new(tex1.Width + 3, 0);
+				Vector2 numberAdvanceGlow = new(tex1Glow.Width + 3, 0);
+				sb.Draw(tex1Glow, center - tex1Glow.Size() / 2 + numberOffset, glowColor);
+				sb.Draw(tex2Glow, center - tex1Glow.Size() / 2 + numberOffset + numberAdvance, glowColor);
+				sb.Draw(tex1, center - tex1.Size() / 2 + numberOffset, Color.White);
+				sb.Draw(tex2, center - tex1.Size() / 2 + numberOffset + numberAdvance, Color.White);
+				
+				// e-tanks
+				int totalEnergyTanks = mp.EnergyTanks;
+				int filledEnergyTanks = mp.FilledEnergyTanks;
+				Texture2D emptyEnergyTankTex = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/EnergyTankEmpty").Value;
+				Texture2D filledEnergyTankTex = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/EnergyTankFilled").Value;
+
+				Vector2 energyOffset = numberOffset + numberAdvance * 2 + new Vector2(10, 0);
+				Vector2 energyAdvance = new(17, 0);
+				for (int i = 0; i < totalEnergyTanks; i++)
+				{
+					Texture2D tex = i < filledEnergyTanks ? filledEnergyTankTex : emptyEnergyTankTex;
+					sb.Draw(tex, center - emptyEnergyTankTex.Size() / 2 + energyOffset + energyAdvance * i, Color.White);
+				}
+
+				// sb.Draw(tex1, center + new Vector2(-100 - tex1.Width * 2 - 16, - tex1.Height / 2), new Rectangle?(new Rectangle(0, 0, tex1.Width, tex1.Height)), mp.HUDColor, 0f, new Vector2((float)(tex1.Width / 2), (float)(tex1.Height / 2)), 2f, SpriteEffects.None, 0f);
+				// sb.Draw(tex2, center + new Vector2(-100 - tex1.Width - 4, - tex1.Height / 2), new Rectangle?(new Rectangle(0, 0, tex2.Width, tex2.Height)), mp.HUDColor, 0f, new Vector2((float)(tex2.Width / 2), (float)(tex2.Height / 2)), 2f, SpriteEffects.None, 0f);
+
+				return;
 				// bar
 				Texture2D value = Terraria.GameContent.TextureAssets.MagicPixel.Value;
 				Rectangle rectangle = Utils.CenteredRectangle(center, new Vector2(200f, 10f));
@@ -846,6 +900,15 @@ namespace MetroidMod.Common.Systems
 					sb.Draw(boxTex, center + new Vector2(-100 + (tex1.Width * i) + 8 + (4 * i), - boxTex.Height / 2), new Rectangle?(new Rectangle(0, 0, boxTex.Width / 2, boxTex.Height / 2)), i < boxCount ? mp.HUDColor : Color.DarkSlateGray, 0f, new Vector2((float)(tex1.Width / 2), (float)(tex1.Height / 2)), 1.5f, SpriteEffects.None, 0f);
 				}
 			}
+		}
+		private Color BlendColors(Color color1, Color color2, float ratio)
+		{
+			byte r = (byte)((color1.R * (1 - ratio)) + (color2.R * ratio));
+			byte g = (byte)((color1.G * (1 - ratio)) + (color2.G * ratio));
+			byte b = (byte)((color1.B * (1 - ratio)) + (color2.B * ratio));
+			byte a = (byte)((color1.A * (1 - ratio)) + (color2.A * ratio));
+
+			return new Color(r, g, b, a);
 		}
 	}
 }
