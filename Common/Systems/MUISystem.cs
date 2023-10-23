@@ -815,8 +815,7 @@ namespace MetroidMod.Common.Systems
 			MPlayer mp = P.GetModPlayer<MPlayer>();
 			if (mp.ShouldShowArmorUI)
 			{
-				const int verticalPadding = 20;
-				const int borderPadding = 1;
+
 				Color? dangerColor = null;
 				// low hp flash
 				if (mp.EnergyIsLow())
@@ -839,10 +838,15 @@ namespace MetroidMod.Common.Systems
 					}
 				}
 
+				const int verticalPadding = 20;
+				const int borderPadding = 1;
+				
 				// background
 				Texture2D bgTex = ModContent.Request<Texture2D>($"{Mod.Name}/Assets/Textures/SuitHud/SuitHudBg").Value;
 				Vector2 center = new(Main.screenWidth / 2, bgTex.Height / 2 + verticalPadding);
 				sb.Draw(bgTex, center - bgTex.Size() / 2, bgColor);
+				
+				// add vertical padding to center since there's a bar at the top of the sprite
 				center += new Vector2(0, borderPadding);
 				
 				// value
